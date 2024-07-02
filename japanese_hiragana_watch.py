@@ -7,6 +7,10 @@ import sys
 import os
 import configparser
 
+# KAZ - add slideshow
+from photo_manager import PhotoManager
+from slideshow import Slideshow
+
 # Set the locale to Japanese
 try:
     locale.setlocale(locale.LC_TIME, 'ja_JP.UTF-8')
@@ -26,6 +30,8 @@ try:
     screen_width = config.getint('Display', 'width')
     screen_height = config.getint('Display', 'height')
     fullscreen = config.getboolean('Display', 'fullscreen')
+    slideshow_enabled = config.getboolean('Slideshow', 'enabled', fallback=False)
+    transition_time = config.getint('Slideshow', 'transition_time', fallback=60)
 except (configparser.NoSectionError, configparser.NoOptionError):
     print("Error: Configuration missing or invalid in config.ini")
     pygame.quit()
@@ -120,6 +126,16 @@ def main():
     global screen, fullscreen
     running = True
     fullscreen = False
+
+    # Initialize PhotoManager and Slideshow if enabled
+    if slideshow_enabled:
+        photo_manager = PhotoManager()
+        slideshow = Slideshow(screen, photo_manager, transition_time)
+    else:
+        slideshow = None
+
+    clock = pygame.time.Clock()
+
     while running:
         for event in pygame.event.get():
             if event.type == pygame.QUIT:
@@ -135,6 +151,14 @@ def main():
                         screen = pygame.display.set_mode((screen_width, screen_height))
                 elif event.key == pygame.K_c and event.mod & pygame.KMOD_CTRL:
                     running = False
+
+        # Clear the screen
+        screen.fill(BLACK)
+
+        # Update and draw slideshow if enabled
+        if slideshow:
+            slideshow.update()
+            slideshow.draw()
 
         # Get the current date and time
         now = datetime.datetime.now()
@@ -178,9 +202,6 @@ def main():
             am_pm = "ごぜん" if now.hour < 12 else "ごご"
             time_text = f"いまは{am_pm}{hour_text}{minute}です。"
 
-        # Clear the screen
-        screen.fill(BLACK)
-
         # Calculate the font size based on screen dimensions and text length
         max_text_length = max(len(date_text), len(time_text))
         font_size = int(min(screen_width, screen_height) / (max_text_length * 0.6))
@@ -202,6 +223,9 @@ def main():
 
         # Update the display
         pygame.display.flip()
+
+        # Control the frame rate
+        clock.tick(30)  # 30 FPS
 
     # Quit Pygame
     pygame.quit()
