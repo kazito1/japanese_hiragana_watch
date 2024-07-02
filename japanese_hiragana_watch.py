@@ -32,6 +32,7 @@ try:
     fullscreen = config.getboolean('Display', 'fullscreen')
     slideshow_enabled = config.getboolean('Slideshow', 'enabled', fallback=False)
     transition_time = config.getint('Slideshow', 'transition_time', fallback=60)
+    photo_months_range = config.getint('Photos', 'months_range', fallback=12)
 except (configparser.NoSectionError, configparser.NoOptionError):
     print("Error: Configuration missing or invalid in config.ini")
     pygame.quit()
@@ -129,7 +130,7 @@ def main():
 
     # Initialize PhotoManager and Slideshow if enabled
     if slideshow_enabled:
-        photo_manager = PhotoManager()
+        photo_manager = PhotoManager(months_range=photo_months_range)
         slideshow = Slideshow(screen, photo_manager, transition_time)
     else:
         slideshow = None

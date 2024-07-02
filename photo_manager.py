@@ -14,13 +14,14 @@ class PhotoManager:
     API_BASE_URL = 'https://photoslibrary.googleapis.com/v1'
     MAX_CACHE_SIZE = 10  # Maximum number of photos to keep in cache
 
-    def __init__(self, cache_dir='photo_cache'):
+    def __init__(self, cache_dir='photo_cache', months_range=12):
         self.creds = self.get_credentials()
         self.cache_dir = cache_dir
         if not os.path.exists(cache_dir):
             os.makedirs(cache_dir)
         self.photo_list = []
         self.clean_cache()
+        self.months_range = months_range
 
     def get_credentials(self):
         creds = None
@@ -36,17 +37,17 @@ class PhotoManager:
                 token.write(creds.to_json())
         return creds
 
-    def get_recent_photos(self, months=6):
+    def get_recent_photos(self, months=12):  # Changed from 6 to 12
         print("Fetching recent favorite photos")
-        six_months_ago = datetime.now() - timedelta(days=30*months)
+        one_year_ago = datetime.now() - timedelta(days=30*self.months_range)
         body = {
             'filters': {
                 'dateFilter': {
                     'ranges': [{
                         'startDate': {
-                            'year': six_months_ago.year,
-                            'month': six_months_ago.month,
-                            'day': six_months_ago.day
+                            'year': one_year_ago.year,
+                            'month': one_year_ago.month,
+                            'day': one_year_ago.day
                         },
                         'endDate': {
                             'year': datetime.now().year,
@@ -59,7 +60,7 @@ class PhotoManager:
                     'includedFeatures': ['FAVORITES']
                 }
             },
-            'pageSize': 100  # Adjust this value as needed
+            'pageSize': 100  # You might want to increase this if you have many favorites
         }
         headers = {
             'Authorization': f'Bearer {self.creds.token}',
