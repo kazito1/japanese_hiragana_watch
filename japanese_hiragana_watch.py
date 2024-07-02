@@ -6,6 +6,7 @@ import locale
 import sys
 import os
 import configparser
+import time
 
 # KAZ - add slideshow
 from photo_manager import PhotoManager
@@ -138,92 +139,98 @@ def main():
     clock = pygame.time.Clock()
 
     while running:
-        for event in pygame.event.get():
-            if event.type == pygame.QUIT:
-                running = False
-            elif event.type == pygame.KEYDOWN:
-                if event.key == pygame.K_ESCAPE:
+        try:
+            for event in pygame.event.get():
+                if event.type == pygame.QUIT:
                     running = False
-                elif event.key == pygame.K_RETURN and event.mod & pygame.KMOD_ALT:
-                    fullscreen = not fullscreen
-                    if fullscreen:
-                        screen = pygame.display.set_mode((screen_width, screen_height), pygame.FULLSCREEN)
-                    else:
-                        screen = pygame.display.set_mode((screen_width, screen_height))
-                elif event.key == pygame.K_c and event.mod & pygame.KMOD_CTRL:
-                    running = False
+                elif event.type == pygame.KEYDOWN:
+                    if event.key == pygame.K_ESCAPE:
+                        running = False
+                    elif event.key == pygame.K_RETURN and event.mod & pygame.KMOD_ALT:
+                        fullscreen = not fullscreen
+                        if fullscreen:
+                            screen = pygame.display.set_mode((screen_width, screen_height), pygame.FULLSCREEN)
+                        else:
+                            screen = pygame.display.set_mode((screen_width, screen_height))
+                    elif event.key == pygame.K_c and event.mod & pygame.KMOD_CTRL:
+                        running = False
 
-        # Clear the screen
-        screen.fill(BLACK)
+            # Clear the screen
+            screen.fill(BLACK)
 
-        # Update and draw slideshow if enabled
-        if slideshow:
-            slideshow.update()
-            slideshow.draw()
+            # Update and draw slideshow if enabled
+            if slideshow:
+                slideshow.update()
+                slideshow.draw()
 
-        # Get the current date and time
-        now = datetime.datetime.now()
+            # Get the current date and time
+            now = datetime.datetime.now()
 
-        # Format the date in Japanese
-        year = get_japanese_number(now.year, "year")
-        month = get_japanese_number(now.month, "default") + "がつ"
-        day = get_japanese_number(now.day, "day")
+            # Format the date in Japanese
+            year = get_japanese_number(now.year, "year")
+            month = get_japanese_number(now.month, "default") + "がつ"
+            day = get_japanese_number(now.day, "day")
 
-        # Temporarily switch locale to English to get the abbreviated day name
-        locale.setlocale(locale.LC_TIME, 'en_US.UTF-8')
-        weekday = now.strftime("%a")
-        locale.setlocale(locale.LC_TIME, 'ja_JP.UTF-8')  # Switch back to Japanese locale
+            # Temporarily switch locale to English to get the abbreviated day name
+            locale.setlocale(locale.LC_TIME, 'en_US.UTF-8')
+            weekday = now.strftime("%a")
+            locale.setlocale(locale.LC_TIME, 'ja_JP.UTF-8')  # Switch back to Japanese locale
 
-        weekday_mapping = {
-            "Sun": "にちようび",
-            "Mon": "げつようび",
-            "Tue": "かようび",
-            "Wed": "すいようび",
-            "Thu": "もくようび",
-            "Fri": "きんようび",
-            "Sat": "どようび"
-        }
-        weekday_text = weekday_mapping[weekday]
-        date_text = f"きょうは{year}{month}{day}{weekday_text}です。"
+            weekday_mapping = {
+                "Sun": "にちようび",
+                "Mon": "げつようび",
+                "Tue": "かようび",
+                "Wed": "すいようび",
+                "Thu": "もくようび",
+                "Fri": "きんようび",
+                "Sat": "どようび"
+            }
+            weekday_text = weekday_mapping[weekday]
+            date_text = f"きょうは{year}{month}{day}{weekday_text}です。"
 
-        # Format the time in Japanese
-        hour = now.hour % 12
-        if hour == 0:
-            if now.minute == 0:
-                time_text = "いまはごぜんれいじです。"
+            # Format the time in Japanese
+            hour = now.hour % 12
+            if hour == 0:
+                if now.minute == 0:
+                    time_text = "いまはごぜんれいじです。"
+                else:
+                    hour = 12
+                    hour_text = get_japanese_number(hour, "hour")
+                    minute = get_japanese_number(now.minute, "minute")
+                    am_pm = "ごぜん"
+                    time_text = f"いまは{am_pm}{hour_text}{minute}です。"
             else:
-                hour = 12
                 hour_text = get_japanese_number(hour, "hour")
                 minute = get_japanese_number(now.minute, "minute")
-                am_pm = "ごぜん"
+                am_pm = "ごぜん" if now.hour < 12 else "ごご"
                 time_text = f"いまは{am_pm}{hour_text}{minute}です。"
-        else:
-            hour_text = get_japanese_number(hour, "hour")
-            minute = get_japanese_number(now.minute, "minute")
-            am_pm = "ごぜん" if now.hour < 12 else "ごご"
-            time_text = f"いまは{am_pm}{hour_text}{minute}です。"
 
-        # Calculate the font size based on screen dimensions and text length
-        max_text_length = max(len(date_text), len(time_text))
-        font_size = int(min(screen_width, screen_height) / (max_text_length * 0.6))
-        font = pygame.font.Font(font_path, font_size)
+            # Calculate the font size based on screen dimensions and text length
+            max_text_length = max(len(date_text), len(time_text))
+            font_size = int(min(screen_width, screen_height) / (max_text_length * 0.6))
+            font = pygame.font.Font(font_path, font_size)
 
-        # Render the date and time text
-        date_surface = font.render(date_text, True, WHITE)
-        time_surface = font.render(time_text, True, WHITE)
+            # Render the date and time text
+            date_surface = font.render(date_text, True, WHITE)
+            time_surface = font.render(time_text, True, WHITE)
 
-        # Calculate the position to center the text
-        date_x = (screen_width - date_surface.get_width()) // 2
-        date_y = (screen_height - date_surface.get_height() - time_surface.get_height()) // 2
-        time_x = (screen_width - time_surface.get_width()) // 2
-        time_y = date_y + date_surface.get_height()
+            # Calculate the position to center the text
+            date_x = (screen_width - date_surface.get_width()) // 2
+            date_y = (screen_height - date_surface.get_height() - time_surface.get_height()) // 2
+            time_x = (screen_width - time_surface.get_width()) // 2
+            time_y = date_y + date_surface.get_height()
 
-        # Draw the date and time text on the screen
-        screen.blit(date_surface, (date_x, date_y))
-        screen.blit(time_surface, (time_x, time_y))
+            # Draw the date and time text on the screen
+            screen.blit(date_surface, (date_x, date_y))
+            screen.blit(time_surface, (time_x, time_y))
 
-        # Update the display
-        pygame.display.flip()
+            # Update the display
+            pygame.display.flip()
+
+        except Exception as e:
+            print(f"An error occurred: {e}")
+            print("Attempting to continue...")
+            time.sleep(5)  # Wait for 5 seconds before continuing
 
         # Control the frame rate
         clock.tick(30)  # 30 FPS

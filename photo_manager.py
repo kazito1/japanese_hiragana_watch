@@ -55,9 +55,9 @@ class PhotoManager:
                 }))
         return creds
 
-    def get_recent_photos(self, months=12):  # Changed from 6 to 12
+    def get_recent_photos(self):
         print("Fetching recent favorite photos")
-        one_year_ago = datetime.now() - timedelta(days=30*self.months_range)
+        one_year_ago = datetime.now() - timedelta(days=365)
         body = {
             'filters': {
                 'dateFilter': {
@@ -78,12 +78,13 @@ class PhotoManager:
                     'includedFeatures': ['FAVORITES']
                 }
             },
-            'pageSize': 100  # You might want to increase this if you have many favorites
+            'pageSize': 100
         }
         headers = {
             'Authorization': f'Bearer {self.creds.token}',
             'Content-Type': 'application/json'
         }
+        response = None
         try:
             response = requests.post(f'{self.API_BASE_URL}/mediaItems:search', json=body, headers=headers)
             response.raise_for_status()
