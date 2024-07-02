@@ -1,3 +1,5 @@
+![Screenshot 1](images/Screenshot1.png)
+
 # japanese_hiragana_watch
 
 I have created this small application to put it in a Raspberry Pi and help my Japanese learning curve.
