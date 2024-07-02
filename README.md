@@ -35,6 +35,7 @@ I have created this small application to put it in a Raspberry Pi and help my Ja
     4. Go to the "Credentials" section
     5. Create a new OAuth 2.0 Client ID (choose "Desktop app" as the application type)
     6. Download the client configuration file, which will be your credentials.json
+    7. Put the credentials.json file in the same directory as the rest of the clock's files
 
 10. Adjust `config.ini` by setting the right options for Raspberry Pi (and slide show if you want)
 
