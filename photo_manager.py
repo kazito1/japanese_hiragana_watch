@@ -2,6 +2,7 @@ import os
 import datetime
 import random
 import requests
+import json
 from google.oauth2.credentials import Credentials
 from google_auth_oauthlib.flow import InstalledAppFlow
 from google.auth.transport.requests import Request
@@ -11,6 +12,7 @@ SCOPES = ['https://www.googleapis.com/auth/photoslibrary.readonly']
 API_BASE_URL = 'https://photoslibrary.googleapis.com/v1'
 
 class PhotoManager:
+    SCOPES = ['https://www.googleapis.com/auth/photoslibrary.readonly']
     API_BASE_URL = 'https://photoslibrary.googleapis.com/v1'
     MAX_CACHE_SIZE = 10  # Maximum number of photos to keep in cache
 
@@ -26,15 +28,31 @@ class PhotoManager:
     def get_credentials(self):
         creds = None
         if os.path.exists('token.json'):
-            creds = Credentials.from_authorized_user_file('token.json', SCOPES)
+            with open('token.json', 'r') as token:
+                cred_data = json.load(token)
+            creds = Credentials(
+                token=cred_data['token'],
+                refresh_token=cred_data['refresh_token'],
+                token_uri=cred_data['token_uri'],
+                client_id=cred_data['client_id'],
+                client_secret=cred_data['client_secret'],
+                scopes=cred_data['scopes']
+            )
         if not creds or not creds.valid:
             if creds and creds.expired and creds.refresh_token:
                 creds.refresh(Request())
             else:
-                flow = InstalledAppFlow.from_client_secrets_file('credentials.json', SCOPES)
+                flow = InstalledAppFlow.from_client_secrets_file('credentials.json', self.SCOPES)
                 creds = flow.run_local_server(port=0)
             with open('token.json', 'w') as token:
-                token.write(creds.to_json())
+                token.write(json.dumps({
+                    'token': creds.token,
+                    'refresh_token': creds.refresh_token,
+                    'token_uri': creds.token_uri,
+                    'client_id': creds.client_id,
+                    'client_secret': creds.client_secret,
+                    'scopes': creds.scopes
+                }))
         return creds
 
     def get_recent_photos(self, months=12):  # Changed from 6 to 12
