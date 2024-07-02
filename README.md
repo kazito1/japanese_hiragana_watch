@@ -21,15 +21,26 @@ I have created this small application to put it in a Raspberry Pi and help my Ja
 6. Update the locale settings:
 ```sudo update-locale```
 
-7. Install pygame and Japanese truetype font
-```sudo apt-get install python3-pygame fonts-horai-umefont```
+7. Install pygame, google authentication stuff and Japanese truetype font
+```sudo apt-get install python3-pygame python3-google-auth-httplib2 python3-google-auth-oauthlib fonts-horai-umefont ```
 
 8. Reboot your Raspberry Pi:
 ```sudo reboot```
 
-9. Adjust `config.ini` by setting the right options for Raspberry Pi
+9. If you want to make a slide show of your own photos, go to https://console.cloud.google.com/ and get the `credentials.json` file:
 
-10. Run the script:
+    1. Go to the Google Cloud Console (https://console.cloud.google.com/)
+    2. Create a new project or select an existing one
+    3. Enable the Google Photos Library API for your project
+    4. Go to the "Credentials" section
+    5. Create a new OAuth 2.0 Client ID (choose "Desktop app" as the application type)
+    6. Download the client configuration file, which will be your credentials.json
+
+10. Adjust `config.ini` by setting the right options for Raspberry Pi (and slide show if you want)
+
+11. Run the script:
 ```./japanese_hiragana_watch.py```
+
+12. When asked for, log into your google account.
 
 To exit use the `Esc` key or `Ctrl+C`
