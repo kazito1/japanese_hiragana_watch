@@ -99,9 +99,15 @@ class PhotoManager:
         filename = f"{media_item['id']}.jpg"
         filepath = os.path.join(self.cache_dir, filename)
         if not os.path.exists(filepath):
-            with open(filepath, 'wb') as f:
-                f.write(requests.get(download_url).content)
-            self.clean_cache()  # Clean cache after adding a new photo
+            try:
+                response = requests.get(download_url)
+                response.raise_for_status()
+                with open(filepath, 'wb') as f:
+                    f.write(response.content)
+                self.clean_cache()
+            except requests.RequestException as e:
+                print(f"Error downloading photo: {e}")
+                return None
         return filepath
 
     def clean_cache(self):

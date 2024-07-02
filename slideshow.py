@@ -24,8 +24,12 @@ class Slideshow:
 
     def load_and_scale_photo(self, photo_path):
         print(f"Loading and scaling photo: {photo_path}")
-        photo = pygame.image.load(photo_path)
-        return self.scale_photo(photo)
+        try:
+            photo = pygame.image.load(photo_path)
+            return self.scale_photo(photo)
+        except pygame.error as e:
+            print(f"Error loading image {photo_path}: {e}")
+            return None
 
     def scale_photo(self, photo):
         screen_rect = self.screen.get_rect()
@@ -43,7 +47,7 @@ class Slideshow:
         if not self.transitioning and current_time - self.last_change >= self.transition_time:
             self.start_transition()
 
-        if self.transitioning:
+        if self.transitioning and self.next_photo:
             self.alpha -= 5  # Adjust for smoother/faster transition
             if self.alpha <= 0:
                 self.current_photo = self.next_photo
@@ -54,12 +58,17 @@ class Slideshow:
 
     def start_transition(self):
         print("Starting transition")
-        new_photo_path = self.photo_manager.get_random_photo()
-        if new_photo_path:
-            self.next_photo = self.load_and_scale_photo(new_photo_path)
-            self.transitioning = True
-        else:
-            print("Failed to get new photo")
+        max_attempts = 5  # Try up to 5 times to get a valid photo
+        for _ in range(max_attempts):
+            new_photo_path = self.photo_manager.get_random_photo()
+            if new_photo_path:
+                loaded_photo = self.load_and_scale_photo(new_photo_path)
+                if loaded_photo:
+                    self.next_photo = loaded_photo
+                    self.transitioning = True
+                    return
+            print("Failed to get or load new photo, trying again...")
+        print("Failed to get a valid photo after multiple attempts")
 
     def draw(self):
         if self.current_photo:
