@@ -28,31 +28,26 @@ class PhotoManager:
     def get_credentials(self):
         creds = None
         if os.path.exists('token.json'):
-            with open('token.json', 'r') as token:
-                cred_data = json.load(token)
-            creds = Credentials(
-                token=cred_data['token'],
-                refresh_token=cred_data['refresh_token'],
-                token_uri=cred_data['token_uri'],
-                client_id=cred_data['client_id'],
-                client_secret=cred_data['client_secret'],
-                scopes=cred_data['scopes']
-            )
+            creds = Credentials.from_authorized_user_file('token.json', self.SCOPES)
+        
         if not creds or not creds.valid:
             if creds and creds.expired and creds.refresh_token:
-                creds.refresh(Request())
+                print("Refreshing expired token...")
+                try:
+                    creds.refresh(Request())
+                except Exception as e:
+                    print(f"Error refreshing token: {e}")
+                    # Optionally, delete the token file to force re-authentication next time
+                    os.remove('token.json')
             else:
+                print("Token is invalid or missing. Starting new authentication flow.")
                 flow = InstalledAppFlow.from_client_secrets_file('credentials.json', self.SCOPES)
                 creds = flow.run_local_server(port=0)
+            
+            # Save the credentials for the next run
             with open('token.json', 'w') as token:
-                token.write(json.dumps({
-                    'token': creds.token,
-                    'refresh_token': creds.refresh_token,
-                    'token_uri': creds.token_uri,
-                    'client_id': creds.client_id,
-                    'client_secret': creds.client_secret,
-                    'scopes': creds.scopes
-                }))
+                token.write(creds.to_json())
+        
         return creds
 
     def get_recent_photos(self):
