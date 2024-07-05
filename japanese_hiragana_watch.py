@@ -189,21 +189,25 @@ def main():
             date_text = f"きょうは{year}{month}{day}{weekday_text}です。"
 
             # Format the time in Japanese
-            hour = now.hour % 12
+            hour = now.hour
+            is_pm = hour >= 12
+            hour = hour % 12
             if hour == 0:
-                if now.minute == 0:
-                    time_text = "いまはごぜんれいじです。"
+                hour = 12
+
+            if hour == 12 and now.minute == 0:
+                if is_pm:
+                    time_text = "いまはごごじゅうにじです。"
                 else:
-                    hour = 12
-                    hour_text = get_japanese_number(hour, "hour")
-                    minute = get_japanese_number(now.minute, "minute")
-                    am_pm = "ごぜん"
-                    time_text = f"いまは{am_pm}{hour_text}{minute}です。"
+                    time_text = "いまはごぜんれいじです。"
             else:
                 hour_text = get_japanese_number(hour, "hour")
-                minute = get_japanese_number(now.minute, "minute")
-                am_pm = "ごぜん" if now.hour < 12 else "ごご"
-                time_text = f"いまは{am_pm}{hour_text}{minute}です。"
+                am_pm = "ごご" if is_pm else "ごぜん"
+                if now.minute == 0:
+                    time_text = f"いまは{am_pm}{hour_text}です。"
+                else:
+                    minute = get_japanese_number(now.minute, "minute")
+                    time_text = f"いまは{am_pm}{hour_text}{minute}です。"
 
             # Calculate the font size based on screen dimensions and text length
             max_text_length = max(len(date_text), len(time_text))
