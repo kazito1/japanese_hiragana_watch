@@ -28,8 +28,14 @@ class PhotoManager:
     def get_credentials(self):
         creds = None
         if os.path.exists('token.json'):
-            creds = Credentials.from_authorized_user_file('token.json', self.SCOPES)
-        
+            try:
+                with open('token.json', 'r') as token_file:
+                    token_data = json.load(token_file)
+                creds = Credentials.from_authorized_user_info(token_data, self.SCOPES)
+            except Exception as e:
+                print(f"An error occurred while reading the token: {e}")
+                os.remove('token.json')
+
         if not creds or not creds.valid:
             if creds and creds.expired and creds.refresh_token:
                 print("Refreshing expired token...")
@@ -37,17 +43,26 @@ class PhotoManager:
                     creds.refresh(Request())
                 except Exception as e:
                     print(f"Error refreshing token: {e}")
-                    # Optionally, delete the token file to force re-authentication next time
-                    os.remove('token.json')
-            else:
-                print("Token is invalid or missing. Starting new authentication flow.")
-                flow = InstalledAppFlow.from_client_secrets_file('credentials.json', self.SCOPES)
+                    creds = None
+            
+            if not creds:
+                print("Starting new authentication flow...")
+                flow = InstalledAppFlow.from_client_secrets_file(
+                    'credentials.json', self.SCOPES)
                 creds = flow.run_local_server(port=0)
             
             # Save the credentials for the next run
             with open('token.json', 'w') as token:
-                token.write(creds.to_json())
-        
+                token_data = {
+                    'token': creds.token,
+                    'refresh_token': creds.refresh_token,
+                    'token_uri': creds.token_uri,
+                    'client_id': creds.client_id,
+                    'client_secret': creds.client_secret,
+                    'scopes': creds.scopes
+                }
+                json.dump(token_data, token)
+
         return creds
 
     def get_recent_photos(self):

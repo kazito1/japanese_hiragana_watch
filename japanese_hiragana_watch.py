@@ -130,6 +130,7 @@ def main():
     fullscreen = False
 
     # Initialize PhotoManager and Slideshow if enabled
+    photo_manager = None
     if slideshow_enabled:
         photo_manager = PhotoManager(months_range=photo_months_range)
         slideshow = Slideshow(screen, photo_manager, transition_time)
@@ -142,13 +143,13 @@ def main():
     token_check_interval = 3600  # Check token every hour
 
     while running:
-        current_time = time.time()
-        if current_time - last_token_check > token_check_interval:
-            print("Performing periodic token check...")
-            photo_manager.get_credentials()  # This will refresh if necessary
-            last_token_check = current_time
-            
         try:
+            current_time = time.time()
+            if current_time - last_token_check > token_check_interval:
+                print("Performing periodic token check...")
+                photo_manager.get_credentials()  # This will refresh if necessary
+                last_token_check = current_time
+
             for event in pygame.event.get():
                 if event.type == pygame.QUIT:
                     running = False
