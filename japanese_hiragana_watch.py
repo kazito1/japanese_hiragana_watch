@@ -140,12 +140,12 @@ def main():
     clock = pygame.time.Clock()
 
     last_token_check = time.time()
-    token_check_interval = 3600  # Check token every hour
+    TOKEN_CHECK_INTERVAL = 3600  # Check every hour
 
     while running:
         try:
             current_time = time.time()
-            if current_time - last_token_check > token_check_interval:
+            if slideshow_enabled and photo_manager and current_time - last_token_check > TOKEN_CHECK_INTERVAL:
                 print("Performing periodic token check...")
                 photo_manager.get_credentials()  # This will refresh if necessary
                 last_token_check = current_time
