@@ -57,34 +57,36 @@ class PhotoManager:
                 flow = InstalledAppFlow.from_client_secrets_file(
                     'credentials.json', self.SCOPES)
                 creds = flow.run_local_server(port=0)
-            
-            # Save the credentials for the next run
-            with open('token.json', 'w') as token:
-                token_data = {
-                    'token': creds.token,
-                    'refresh_token': creds.refresh_token,
-                    'token_uri': creds.token_uri,
-                    'client_id': creds.client_id,
-                    'client_secret': creds.client_secret,
-                    'scopes': creds.scopes
-                }
-                json.dump(token_data, token)
-            logging.info("New token saved")
+                self.save_credentials(creds)
+
         return creds
+
+    def save_credentials(self, creds):
+        logging.info("Saving new credentials")
+        with open('token.json', 'w') as token:
+            token_data = {
+                'token': creds.token,
+                'refresh_token': creds.refresh_token,
+                'token_uri': creds.token_uri,
+                'client_id': creds.client_id,
+                'client_secret': creds.client_secret,
+                'scopes': creds.scopes
+            }
+            json.dump(token_data, token)
 
     def refresh_token_if_needed(self):
         if not self.creds.valid:
             if self.creds.expired and self.creds.refresh_token:
                 logging.info("Refreshing expired token")
                 self.creds.refresh(Request())
-                self.save_credentials()
+                self.save_credentials(self.creds)
             else:
                 logging.warning("Token is invalid and can't be refreshed. Starting new authentication flow.")
-                self.start_new_auth_flow()
+                self.creds = self.get_credentials()
 
     def get_recent_photos(self):
-        logging.info("Making authenticated API request to fetch recent favorite photos")
         self.refresh_token_if_needed()
+        logging.info("Making authenticated API request to fetch recent favorite photos")
         one_year_ago = datetime.now() - timedelta(days=365)
         body = {
             'filters': {
