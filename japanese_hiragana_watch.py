@@ -12,6 +12,16 @@ import time
 from photo_manager import PhotoManager
 from slideshow import Slideshow
 
+# Delete token.json if it exists
+if os.path.exists('token.json'):
+    print("Removing old token file...")
+    try:
+        os.remove('token.json')
+    except Exception as e:
+        print(f"An error occurred: {e}")
+        sys.exit(1)
+    print("Old token file removed. A new one will be created during authentication.")
+
 # Set the locale to Japanese
 try:
     locale.setlocale(locale.LC_TIME, 'ja_JP.UTF-8')
