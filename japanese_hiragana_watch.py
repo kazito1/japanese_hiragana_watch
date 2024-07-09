@@ -9,9 +9,23 @@ import os
 import configparser
 import time
 
-# Configure logging
-logging.basicConfig(filename='watch.log', level=logging.INFO, 
-                    format='%(asctime)s - %(levelname)s - %(message)s')
+# Read the configuration file
+config = configparser.ConfigParser()
+config.read('config.ini')
+
+# Set up logging
+try:
+    log_level = config.get('Logging', 'level', fallback='INFO')
+    numeric_level = getattr(logging, log_level.upper(), None)
+    if not isinstance(numeric_level, int):
+        raise ValueError(f'Invalid log level: {log_level}')
+    logging.basicConfig(filename='watch.log', level=numeric_level,
+                        format='%(asctime)s - %(levelname)s - %(message)s')
+except Exception as e:
+    print(f"Error setting up logging: {e}")
+    print("Defaulting to INFO level logging")
+    logging.basicConfig(filename='watch.log', level=logging.INFO,
+                        format='%(asctime)s - %(levelname)s - %(message)s')
 
 # KAZ - add slideshow
 from photo_manager import PhotoManager
@@ -161,6 +175,7 @@ def main():
     PHOTO_CHECK_INTERVAL = 300  # Check every 5 minutes
 
     while running:
+        logging.debug(f"Main loop iteration at {datetime.datetime.now()}")
         try:
             current_time = time.time()
             if slideshow_enabled and current_time - last_photo_check > PHOTO_CHECK_INTERVAL:

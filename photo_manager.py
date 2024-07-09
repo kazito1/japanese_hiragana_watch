@@ -134,15 +134,16 @@ class PhotoManager:
             logging.info(f"Removed old cached file: {oldest_file}")
 
     def get_random_photo(self):
-        logging.info("Getting random photo")
+        logging.debug(f"Getting random photo. Photo list length: {len(self.photo_list)}")
         if not self.photo_list:
             logging.info("Photo list empty, fetching new photos")
             self.photo_list = self.get_recent_photos()
         
         if self.photo_list:
             photo = random.choice(self.photo_list)
-            self.photo_list.remove(photo)  # Ensure we don't repeat photos until we've gone through all of them
+            self.photo_list.remove(photo)
+            logging.debug(f"Selected photo: {photo['id']}")
             return self.download_photo(photo)
         else:
-            logging.info("No favorite photos found. Please mark some photos as favorites in Google Photos.")
+            logging.warning("No photos available after attempting to fetch")
             return None

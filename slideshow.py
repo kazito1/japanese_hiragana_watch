@@ -78,6 +78,7 @@ class Slideshow:
         logging.warning("Failed to get a valid photo after multiple attempts")
 
     def draw(self):
+        logging.debug(f"Drawing slideshow. Current photo: {self.current_photo}, Transitioning: {self.transitioning}")
         if self.current_photo:
             photo_rect = self.current_photo.get_rect()
             screen_rect = self.screen.get_rect()
