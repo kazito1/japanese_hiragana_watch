@@ -167,3 +167,6 @@ token.json
 
 # Photo Cache directory
 photo_cache/
+
+# Log
+watch.log
