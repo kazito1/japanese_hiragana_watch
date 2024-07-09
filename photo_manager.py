@@ -121,7 +121,7 @@ class PhotoManager:
                     f.write(response.content)
                 self.clean_cache()
             except requests.RequestException as e:
-                print(f"Error downloading photo: {e}")
+                logging.error(f"Error downloading photo: {e}")
                 return None
         return filepath
 
@@ -131,7 +131,7 @@ class PhotoManager:
         while len(cached_files) > self.MAX_CACHE_SIZE:
             oldest_file = cached_files.pop(0)
             os.remove(oldest_file)
-            print(f"Removed old cached file: {oldest_file}")
+            logging.info(f"Removed old cached file: {oldest_file}")
 
     def get_random_photo(self):
         logging.info("Getting random photo")

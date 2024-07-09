@@ -16,20 +16,20 @@ class Slideshow:
         self.load_initial_photo()
 
     def load_initial_photo(self):
-        print("Loading initial photo")
+        logging.info("Loading initial photo")
         photo_path = self.photo_manager.get_random_photo()
         if photo_path:
             self.current_photo = self.load_and_scale_photo(photo_path)
         else:
-            print("Failed to load initial photo")
+            logging.error("Failed to load initial photo")
 
     def load_and_scale_photo(self, photo_path):
-        print(f"Loading and scaling photo: {photo_path}")
+        logging.info(f"Loading and scaling photo: {photo_path}")
         try:
             photo = pygame.image.load(photo_path)
             return self.scale_photo(photo)
         except pygame.error as e:
-            print(f"Error loading image {photo_path}: {e}")
+            logging.error(f"Error loading image {photo_path}: {e}")
             return None
 
     def scale_photo(self, photo):
