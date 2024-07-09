@@ -172,7 +172,7 @@ def main():
                 last_photo_check = current_time
 
             if slideshow_enabled and photo_manager and current_time - last_token_check > TOKEN_CHECK_INTERVAL:
-                print("Performing periodic token check...")
+                logging.info("Performing periodic token check...")
                 photo_manager.get_credentials()  # This will refresh if necessary
                 last_token_check = current_time
 
