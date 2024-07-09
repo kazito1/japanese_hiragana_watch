@@ -8,6 +8,7 @@ from google.oauth2.credentials import Credentials
 from google_auth_oauthlib.flow import InstalledAppFlow
 from google.auth.transport.requests import Request
 from datetime import datetime, timedelta
+from google.auth.transport.requests import Request
 
 SCOPES = ['https://www.googleapis.com/auth/photoslibrary.readonly']
 API_BASE_URL = 'https://photoslibrary.googleapis.com/v1'
@@ -16,6 +17,7 @@ class PhotoManager:
     SCOPES = ['https://www.googleapis.com/auth/photoslibrary.readonly']
     API_BASE_URL = 'https://photoslibrary.googleapis.com/v1'
     MAX_CACHE_SIZE = 10  # Maximum number of photos to keep in cache
+    API_FETCH_SIZE = 30  # Number of photo metadata entries to fetch from API
 
     def __init__(self, cache_dir='photo_cache', months_range=12):
         self.creds = self.get_credentials()
@@ -25,6 +27,8 @@ class PhotoManager:
         self.photo_list = []
         self.clean_cache()
         self.months_range = months_range
+        self.last_api_call_time = 0
+        self.API_CALL_INTERVAL = 30 * 60  # 30 minutes in seconds
 
     def get_credentials(self):
         logging.info("Checking credentials")
@@ -67,8 +71,19 @@ class PhotoManager:
             logging.info("New token saved")
         return creds
 
+    def refresh_token_if_needed(self):
+        if not self.creds.valid:
+            if self.creds.expired and self.creds.refresh_token:
+                logging.info("Refreshing expired token")
+                self.creds.refresh(Request())
+                self.save_credentials()
+            else:
+                logging.warning("Token is invalid and can't be refreshed. Starting new authentication flow.")
+                self.start_new_auth_flow()
+
     def get_recent_photos(self):
-        logging.info("Fetching recent favorite photos")
+        logging.info("Making authenticated API request to fetch recent favorite photos")
+        self.refresh_token_if_needed()
         one_year_ago = datetime.now() - timedelta(days=365)
         body = {
             'filters': {
@@ -90,7 +105,7 @@ class PhotoManager:
                     'includedFeatures': ['FAVORITES']
                 }
             },
-            'pageSize': 100
+            'pageSize': self.API_FETCH_SIZE
         }
         headers = {
             'Authorization': f'Bearer {self.creds.token}',
@@ -134,16 +149,18 @@ class PhotoManager:
             logging.info(f"Removed old cached file: {oldest_file}")
 
     def get_random_photo(self):
-        logging.debug(f"Getting random photo. Photo list length: {len(self.photo_list)}")
-        if not self.photo_list:
-            logging.info("Photo list empty, fetching new photos")
+        current_time = time.time()
+        logging.debug(f"Getting random photo. Photo metadata list length: {len(self.photo_list)}")
+        if not self.photo_list or (current_time - self.last_api_call_time > self.API_CALL_INTERVAL):
+            logging.info("Fetching new photos from API due to empty list or time interval")
             self.photo_list = self.get_recent_photos()
+            self.last_api_call_time = current_time
         
         if self.photo_list:
             photo = random.choice(self.photo_list)
             self.photo_list.remove(photo)
-            logging.debug(f"Selected photo: {photo['id']}")
+            logging.debug(f"Selected photo metadata: {photo['id']}")
             return self.download_photo(photo)
         else:
-            logging.warning("No photos available after attempting to fetch")
+            logging.warning("No photos available after attempting to fetch from API")
             return None
