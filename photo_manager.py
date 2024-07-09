@@ -3,6 +3,7 @@ import datetime
 import random
 import requests
 import json
+import logging
 from google.oauth2.credentials import Credentials
 from google_auth_oauthlib.flow import InstalledAppFlow
 from google.auth.transport.requests import Request
@@ -26,6 +27,7 @@ class PhotoManager:
         self.months_range = months_range
 
     def get_credentials(self):
+        logging.info("Checking credentials")
         creds = None
         if os.path.exists('token.json'):
             try:
@@ -33,20 +35,20 @@ class PhotoManager:
                     token_data = json.load(token_file)
                 creds = Credentials.from_authorized_user_info(token_data, self.SCOPES)
             except Exception as e:
-                print(f"An error occurred while reading the token: {e}")
+                logging.error(f"An error occurred while reading the token: {e}")
                 os.remove('token.json')
 
         if not creds or not creds.valid:
             if creds and creds.expired and creds.refresh_token:
-                print("Refreshing expired token...")
+                logging.info("Refreshing expired token...")
                 try:
                     creds.refresh(Request())
                 except Exception as e:
-                    print(f"Error refreshing token: {e}")
+                    logging.error(f"Error refreshing token: {e}")
                     creds = None
             
             if not creds:
-                print("Starting new authentication flow...")
+                logging.info("Starting new authentication flow...")
                 flow = InstalledAppFlow.from_client_secrets_file(
                     'credentials.json', self.SCOPES)
                 creds = flow.run_local_server(port=0)
@@ -62,11 +64,11 @@ class PhotoManager:
                     'scopes': creds.scopes
                 }
                 json.dump(token_data, token)
-
+            logging.info("New token saved")
         return creds
 
     def get_recent_photos(self):
-        print("Fetching recent favorite photos")
+        logging.info("Fetching recent favorite photos")
         one_year_ago = datetime.now() - timedelta(days=365)
         body = {
             'filters': {
@@ -98,11 +100,13 @@ class PhotoManager:
         try:
             response = requests.post(f'{self.API_BASE_URL}/mediaItems:search', json=body, headers=headers)
             response.raise_for_status()
-            return response.json().get('mediaItems', [])
+            photos = response.json().get('mediaItems', [])
+            logging.info(f"Fetched {len(photos)} photos")
+            return photos
         except requests.RequestException as e:
-            print(f"Error fetching photos: {e}")
+            logging.error(f"Error fetching photos: {e}")
             if response:
-                print(f"Response content: {response.content}")
+                logging.error(f"Response content: {response.content}")
             return []
 
     def download_photo(self, media_item):
@@ -130,7 +134,9 @@ class PhotoManager:
             print(f"Removed old cached file: {oldest_file}")
 
     def get_random_photo(self):
+        logging.info("Getting random photo")
         if not self.photo_list:
+            logging.info("Photo list empty, fetching new photos")
             self.photo_list = self.get_recent_photos()
         
         if self.photo_list:
@@ -138,5 +144,5 @@ class PhotoManager:
             self.photo_list.remove(photo)  # Ensure we don't repeat photos until we've gone through all of them
             return self.download_photo(photo)
         else:
-            print("No favorite photos found. Please mark some photos as favorites in Google Photos.")
+            logging.info("No favorite photos found. Please mark some photos as favorites in Google Photos.")
             return None

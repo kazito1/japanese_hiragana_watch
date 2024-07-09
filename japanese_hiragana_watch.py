@@ -1,5 +1,6 @@
 #!/usr/bin/python
 
+import logging
 import pygame
 import datetime
 import locale
@@ -7,6 +8,10 @@ import sys
 import os
 import configparser
 import time
+
+# Configure logging
+logging.basicConfig(filename='watch.log', level=logging.INFO, 
+                    format='%(asctime)s - %(levelname)s - %(message)s')
 
 # KAZ - add slideshow
 from photo_manager import PhotoManager
@@ -152,9 +157,20 @@ def main():
     last_token_check = time.time()
     TOKEN_CHECK_INTERVAL = 3600  # Check every hour
 
+    last_photo_check = time.time()
+    PHOTO_CHECK_INTERVAL = 300  # Check every 5 minutes
+
     while running:
         try:
             current_time = time.time()
+            if slideshow_enabled and current_time - last_photo_check > PHOTO_CHECK_INTERVAL:
+                logging.info("Performing periodic photo check")
+                if slideshow.current_photo:
+                    logging.info(f"Current photo: {slideshow.current_photo}")
+                else:
+                    logging.warning("No current photo")
+                last_photo_check = current_time
+
             if slideshow_enabled and photo_manager and current_time - last_token_check > TOKEN_CHECK_INTERVAL:
                 print("Performing periodic token check...")
                 photo_manager.get_credentials()  # This will refresh if necessary
@@ -252,6 +268,7 @@ def main():
             pygame.display.flip()
 
         except Exception as e:
+            logging.error(f"An error occurred in main loop: {e}")
             print(f"An error occurred: {e}")
             print("Attempting to continue...")
             time.sleep(5)  # Wait for 5 seconds before continuing
