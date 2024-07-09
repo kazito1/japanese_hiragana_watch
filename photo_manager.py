@@ -18,7 +18,7 @@ class PhotoManager:
     SCOPES = ['https://www.googleapis.com/auth/photoslibrary.readonly']
     API_BASE_URL = 'https://photoslibrary.googleapis.com/v1'
     MAX_CACHE_SIZE = 10  # Maximum number of photos to keep in cache
-    API_FETCH_SIZE = 30  # Number of photo metadata entries to fetch from API
+    API_FETCH_SIZE = 100  # Number of photo metadata entries to fetch from API
 
     def __init__(self, cache_dir='photo_cache', months_range=12):
         self.creds = self.get_credentials()
