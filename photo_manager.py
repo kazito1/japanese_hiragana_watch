@@ -3,10 +3,13 @@ import datetime
 import random
 import requests
 import json
+import logging
+import time
 from google.oauth2.credentials import Credentials
 from google_auth_oauthlib.flow import InstalledAppFlow
 from google.auth.transport.requests import Request
 from datetime import datetime, timedelta
+from google.auth.transport.requests import Request
 
 SCOPES = ['https://www.googleapis.com/auth/photoslibrary.readonly']
 API_BASE_URL = 'https://photoslibrary.googleapis.com/v1'
@@ -15,6 +18,7 @@ class PhotoManager:
     SCOPES = ['https://www.googleapis.com/auth/photoslibrary.readonly']
     API_BASE_URL = 'https://photoslibrary.googleapis.com/v1'
     MAX_CACHE_SIZE = 10  # Maximum number of photos to keep in cache
+    API_FETCH_SIZE = 100  # Number of photo metadata entries to fetch from API
 
     def __init__(self, cache_dir='photo_cache', months_range=12):
         self.creds = self.get_credentials()
@@ -24,39 +28,65 @@ class PhotoManager:
         self.photo_list = []
         self.clean_cache()
         self.months_range = months_range
+        self.last_api_call_time = 0
+        self.API_CALL_INTERVAL = 30 * 60  # 30 minutes in seconds
 
     def get_credentials(self):
+        logging.info("Checking credentials")
         creds = None
         if os.path.exists('token.json'):
-            with open('token.json', 'r') as token:
-                cred_data = json.load(token)
-            creds = Credentials(
-                token=cred_data['token'],
-                refresh_token=cred_data['refresh_token'],
-                token_uri=cred_data['token_uri'],
-                client_id=cred_data['client_id'],
-                client_secret=cred_data['client_secret'],
-                scopes=cred_data['scopes']
-            )
+            try:
+                with open('token.json', 'r') as token_file:
+                    token_data = json.load(token_file)
+                creds = Credentials.from_authorized_user_info(token_data, self.SCOPES)
+            except Exception as e:
+                logging.error(f"An error occurred while reading the token: {e}")
+                os.remove('token.json')
+
         if not creds or not creds.valid:
             if creds and creds.expired and creds.refresh_token:
-                creds.refresh(Request())
-            else:
-                flow = InstalledAppFlow.from_client_secrets_file('credentials.json', self.SCOPES)
+                logging.info("Refreshing expired token...")
+                try:
+                    creds.refresh(Request())
+                except Exception as e:
+                    logging.error(f"Error refreshing token: {e}")
+                    creds = None
+            
+            if not creds:
+                logging.info("Starting new authentication flow...")
+                flow = InstalledAppFlow.from_client_secrets_file(
+                    'credentials.json', self.SCOPES)
                 creds = flow.run_local_server(port=0)
-            with open('token.json', 'w') as token:
-                token.write(json.dumps({
-                    'token': creds.token,
-                    'refresh_token': creds.refresh_token,
-                    'token_uri': creds.token_uri,
-                    'client_id': creds.client_id,
-                    'client_secret': creds.client_secret,
-                    'scopes': creds.scopes
-                }))
+                self.save_credentials(creds)
+
         return creds
 
+    def save_credentials(self, creds):
+        logging.info("Saving new credentials")
+        with open('token.json', 'w') as token:
+            token_data = {
+                'token': creds.token,
+                'refresh_token': creds.refresh_token,
+                'token_uri': creds.token_uri,
+                'client_id': creds.client_id,
+                'client_secret': creds.client_secret,
+                'scopes': creds.scopes
+            }
+            json.dump(token_data, token)
+
+    def refresh_token_if_needed(self):
+        if not self.creds.valid:
+            if self.creds.expired and self.creds.refresh_token:
+                logging.info("Refreshing expired token")
+                self.creds.refresh(Request())
+                self.save_credentials(self.creds)
+            else:
+                logging.warning("Token is invalid and can't be refreshed. Starting new authentication flow.")
+                self.creds = self.get_credentials()
+
     def get_recent_photos(self):
-        print("Fetching recent favorite photos")
+        self.refresh_token_if_needed()
+        logging.info("Making authenticated API request to fetch recent favorite photos")
         one_year_ago = datetime.now() - timedelta(days=365)
         body = {
             'filters': {
@@ -78,7 +108,7 @@ class PhotoManager:
                     'includedFeatures': ['FAVORITES']
                 }
             },
-            'pageSize': 100
+            'pageSize': self.API_FETCH_SIZE
         }
         headers = {
             'Authorization': f'Bearer {self.creds.token}',
@@ -88,11 +118,13 @@ class PhotoManager:
         try:
             response = requests.post(f'{self.API_BASE_URL}/mediaItems:search', json=body, headers=headers)
             response.raise_for_status()
-            return response.json().get('mediaItems', [])
+            photos = response.json().get('mediaItems', [])
+            logging.info(f"Fetched {len(photos)} photos")
+            return photos
         except requests.RequestException as e:
-            print(f"Error fetching photos: {e}")
+            logging.error(f"Error fetching photos: {e}")
             if response:
-                print(f"Response content: {response.content}")
+                logging.error(f"Response content: {response.content}")
             return []
 
     def download_photo(self, media_item):
@@ -107,7 +139,7 @@ class PhotoManager:
                     f.write(response.content)
                 self.clean_cache()
             except requests.RequestException as e:
-                print(f"Error downloading photo: {e}")
+                logging.error(f"Error downloading photo: {e}")
                 return None
         return filepath
 
@@ -117,16 +149,21 @@ class PhotoManager:
         while len(cached_files) > self.MAX_CACHE_SIZE:
             oldest_file = cached_files.pop(0)
             os.remove(oldest_file)
-            print(f"Removed old cached file: {oldest_file}")
+            logging.info(f"Removed old cached file: {oldest_file}")
 
     def get_random_photo(self):
-        if not self.photo_list:
+        current_time = time.time()
+        logging.debug(f"Getting random photo. Photo metadata list length: {len(self.photo_list)}")
+        if not self.photo_list or (current_time - self.last_api_call_time > self.API_CALL_INTERVAL):
+            logging.info("Fetching new photos from API due to empty list or time interval")
             self.photo_list = self.get_recent_photos()
+            self.last_api_call_time = current_time
         
         if self.photo_list:
             photo = random.choice(self.photo_list)
-            self.photo_list.remove(photo)  # Ensure we don't repeat photos until we've gone through all of them
+            self.photo_list.remove(photo)
+            logging.debug(f"Selected photo metadata: {photo['id']}")
             return self.download_photo(photo)
         else:
-            print("No favorite photos found. Please mark some photos as favorites in Google Photos.")
+            logging.warning("No photos available after attempting to fetch from API")
             return None

@@ -1,5 +1,6 @@
 import pygame
 import time
+import logging
 
 class Slideshow:
     def __init__(self, screen, photo_manager, transition_time):
@@ -15,20 +16,20 @@ class Slideshow:
         self.load_initial_photo()
 
     def load_initial_photo(self):
-        print("Loading initial photo")
+        logging.info("Loading initial photo")
         photo_path = self.photo_manager.get_random_photo()
         if photo_path:
             self.current_photo = self.load_and_scale_photo(photo_path)
         else:
-            print("Failed to load initial photo")
+            logging.error("Failed to load initial photo")
 
     def load_and_scale_photo(self, photo_path):
-        print(f"Loading and scaling photo: {photo_path}")
+        logging.info(f"Loading and scaling photo: {photo_path}")
         try:
             photo = pygame.image.load(photo_path)
             return self.scale_photo(photo)
         except pygame.error as e:
-            print(f"Error loading image {photo_path}: {e}")
+            logging.error(f"Error loading image {photo_path}: {e}")
             return None
 
     def scale_photo(self, photo):
@@ -45,6 +46,7 @@ class Slideshow:
     def update(self):
         current_time = time.time()
         if not self.transitioning and current_time - self.last_change >= self.transition_time:
+            logging.info("Starting transition")
             self.start_transition()
 
         if self.transitioning and self.next_photo:
@@ -57,20 +59,26 @@ class Slideshow:
                 self.transitioning = False
 
     def start_transition(self):
-        print("Starting transition")
         max_attempts = 5  # Try up to 5 times to get a valid photo
         for _ in range(max_attempts):
+            logging.info("Attempting to get a new photo")
             new_photo_path = self.photo_manager.get_random_photo()
             if new_photo_path:
+                logging.info(f"New photo obtained: {new_photo_path}")
                 loaded_photo = self.load_and_scale_photo(new_photo_path)
                 if loaded_photo:
-                    self.next_photo = loaded_photo
-                    self.transitioning = True
+                    try:
+                        self.next_photo = loaded_photo
+                        self.transitioning = True
+                    except Exception as e:
+                        logging.error(f"Error loading new photo: {e}")
                     return
-            print("Failed to get or load new photo, trying again...")
-        print("Failed to get a valid photo after multiple attempts")
+            else:
+                logging.warning("Failed to get new photo")
+        logging.warning("Failed to get a valid photo after multiple attempts")
 
     def draw(self):
+        logging.debug(f"Drawing slideshow. Current photo: {self.current_photo}, Transitioning: {self.transitioning}")
         if self.current_photo:
             photo_rect = self.current_photo.get_rect()
             screen_rect = self.screen.get_rect()

@@ -1,5 +1,6 @@
 #!/usr/bin/python
 
+import logging
 import pygame
 import datetime
 import locale
@@ -8,9 +9,37 @@ import os
 import configparser
 import time
 
+# Read the configuration file
+config = configparser.ConfigParser()
+config.read('config.ini')
+
+# Set up logging
+try:
+    log_level = config.get('Logging', 'level', fallback='INFO')
+    numeric_level = getattr(logging, log_level.upper(), None)
+    if not isinstance(numeric_level, int):
+        raise ValueError(f'Invalid log level: {log_level}')
+    logging.basicConfig(filename='watch.log', level=numeric_level,
+                        format='%(asctime)s - %(levelname)s - %(message)s')
+except Exception as e:
+    print(f"Error setting up logging: {e}")
+    print("Defaulting to INFO level logging")
+    logging.basicConfig(filename='watch.log', level=logging.INFO,
+                        format='%(asctime)s - %(levelname)s - %(message)s')
+
 # KAZ - add slideshow
 from photo_manager import PhotoManager
 from slideshow import Slideshow
+
+# Delete token.json if it exists
+if os.path.exists('token.json'):
+    print("Removing old token file...")
+    try:
+        os.remove('token.json')
+    except Exception as e:
+        print(f"An error occurred: {e}")
+        sys.exit(1)
+    print("Old token file removed. A new one will be created during authentication.")
 
 # Set the locale to Japanese
 try:
@@ -130,6 +159,7 @@ def main():
     fullscreen = False
 
     # Initialize PhotoManager and Slideshow if enabled
+    photo_manager = None
     if slideshow_enabled:
         photo_manager = PhotoManager(months_range=photo_months_range)
         slideshow = Slideshow(screen, photo_manager, transition_time)
@@ -138,8 +168,29 @@ def main():
 
     clock = pygame.time.Clock()
 
+    last_token_check = time.time()
+    TOKEN_CHECK_INTERVAL = 3600  # Check every hour
+
+    last_photo_check = time.time()
+    PHOTO_CHECK_INTERVAL = 300  # Check every 5 minutes
+
     while running:
+        logging.debug(f"Main loop iteration at {datetime.datetime.now()}")
         try:
+            current_time = time.time()
+            if slideshow_enabled and current_time - last_photo_check > PHOTO_CHECK_INTERVAL:
+                logging.info("Performing periodic photo check")
+                if slideshow.current_photo:
+                    logging.info(f"Current photo: {slideshow.current_photo}")
+                else:
+                    logging.warning("No current photo")
+                last_photo_check = current_time
+
+            if slideshow_enabled and photo_manager and current_time - last_token_check > TOKEN_CHECK_INTERVAL:
+                logging.info("Performing periodic token check...")
+                photo_manager.get_credentials()  # This will refresh if necessary
+                last_token_check = current_time
+
             for event in pygame.event.get():
                 if event.type == pygame.QUIT:
                     running = False
@@ -232,6 +283,7 @@ def main():
             pygame.display.flip()
 
         except Exception as e:
+            logging.error(f"An error occurred in main loop: {e}")
             print(f"An error occurred: {e}")
             print("Attempting to continue...")
             time.sleep(5)  # Wait for 5 seconds before continuing
