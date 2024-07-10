@@ -2,7 +2,8 @@
 
 # japanese_hiragana_watch
 
-I have created this small application to put it in a Raspberry Pi and help my Japanese learning curve.
+I have created this small application to put it in a Raspberry Pi and help my Japanese learning curve. It shows the date and the time in hiragana.
+If configured, it creates a slideshow of your most recent favorite photos in Google Photos.
 
 # To make it work on a Raspberry Pi
 
