@@ -42,6 +42,6 @@ I have created this small application to put it in a Raspberry Pi and help my Ja
 11. Run the script:
 ```./japanese_hiragana_watch.py```
 
-12. When asked for, log into your google account.
+12. If you decided to enable the slideshow, log into your google account when asked for it.
 
 To exit use the `Esc` key or `Ctrl+C`
