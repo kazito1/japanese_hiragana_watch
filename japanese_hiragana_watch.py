@@ -85,6 +85,39 @@ pygame.display.set_caption("Japanese Watch")
 WHITE = (255, 255, 255)
 BLACK = (0, 0, 0)
 
+def render_text_with_border(font, text, text_color, border_color, border_width):
+    """
+    Render text with a border/outline effect.
+
+    Args:
+        font: pygame font object
+        text: string to render
+        text_color: RGB tuple for the main text color
+        border_color: RGB tuple for the border color
+        border_width: width of the border in pixels
+
+    Returns:
+        pygame surface with bordered text
+    """
+    # Render the main text to get dimensions
+    text_surface = font.render(text, True, text_color)
+    width, height = text_surface.get_size()
+
+    # Create a surface large enough for text + border
+    bordered_surface = pygame.Surface((width + border_width * 2, height + border_width * 2), pygame.SRCALPHA)
+
+    # Render border by drawing text at offset positions
+    for dx in range(-border_width, border_width + 1):
+        for dy in range(-border_width, border_width + 1):
+            if dx != 0 or dy != 0:  # Skip the center position
+                border_text = font.render(text, True, border_color)
+                bordered_surface.blit(border_text, (border_width + dx, border_width + dy))
+
+    # Render the main text on top in the center
+    bordered_surface.blit(text_surface, (border_width, border_width))
+
+    return bordered_surface
+
 def get_japanese_number(number, category):
     if category == "minute":
         minute_exceptions = {
@@ -286,8 +319,9 @@ def main():
 
             font = pygame.font.Font(font_path, font_size)
 
-            # Render all lines
-            line_surfaces = [font.render(line, True, WHITE) for line in lines]
+            # Render all lines with black border
+            border_width = max(2, int(font_size * 0.05))  # Scale border with font size
+            line_surfaces = [render_text_with_border(font, line, WHITE, BLACK, border_width) for line in lines]
 
             # Calculate total height of all lines
             total_text_height = sum(surface.get_height() for surface in line_surfaces)
