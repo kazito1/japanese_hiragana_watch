@@ -260,24 +260,46 @@ def main():
                     minute = get_japanese_number(now.minute, "minute")
                     time_text = f"いまは{am_pm}{hour_text}{minute}です。"
 
-            # Calculate the font size based on screen dimensions and text length
-            max_text_length = max(len(date_text), len(time_text))
-            font_size = int(min(screen_width, screen_height) / (max_text_length * 0.6))
+            # Combine all text into one string
+            combined_text = date_text + time_text
+            total_chars = len(combined_text)
+
+            # Calculate optimal number of lines and characters per line
+            # We want to roughly fill the screen aspect ratio
+            aspect_ratio = screen_width / screen_height
+            chars_per_line = int((total_chars * aspect_ratio) ** 0.5)
+            chars_per_line = max(chars_per_line, 10)  # Minimum 10 chars per line
+
+            # Split text into lines
+            lines = []
+            for i in range(0, total_chars, chars_per_line):
+                lines.append(combined_text[i:i+chars_per_line])
+
+            # Calculate font size that fits all lines on screen
+            # Account for line height being roughly 1.2x font size
+            line_height_factor = 1.2
+            estimated_font_size = int(screen_height / (len(lines) * line_height_factor))
+            # Also check width constraint
+            max_line_length = max(len(line) for line in lines)
+            width_based_font = int(screen_width / (max_line_length * 0.6))
+            font_size = min(estimated_font_size, width_based_font)
+
             font = pygame.font.Font(font_path, font_size)
 
-            # Render the date and time text
-            date_surface = font.render(date_text, True, WHITE)
-            time_surface = font.render(time_text, True, WHITE)
+            # Render all lines
+            line_surfaces = [font.render(line, True, WHITE) for line in lines]
 
-            # Calculate the position to center the text
-            date_x = (screen_width - date_surface.get_width()) // 2
-            date_y = (screen_height - date_surface.get_height() - time_surface.get_height()) // 2
-            time_x = (screen_width - time_surface.get_width()) // 2
-            time_y = date_y + date_surface.get_height()
+            # Calculate total height of all lines
+            total_text_height = sum(surface.get_height() for surface in line_surfaces)
+            # Calculate vertical spacing to distribute lines across screen
+            vertical_padding = (screen_height - total_text_height) / (len(lines) + 1)
 
-            # Draw the date and time text on the screen
-            screen.blit(date_surface, (date_x, date_y))
-            screen.blit(time_surface, (time_x, time_y))
+            # Draw each line centered horizontally, distributed vertically
+            current_y = vertical_padding
+            for line_surface in line_surfaces:
+                line_x = (screen_width - line_surface.get_width()) // 2
+                screen.blit(line_surface, (line_x, current_y))
+                current_y += line_surface.get_height() + vertical_padding
 
             # Update the display
             pygame.display.flip()
