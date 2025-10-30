@@ -31,16 +31,6 @@ except Exception as e:
 from photo_manager import PhotoManager
 from slideshow import Slideshow
 
-# Delete token.json if it exists
-if os.path.exists('token.json'):
-    print("Removing old token file...")
-    try:
-        os.remove('token.json')
-    except Exception as e:
-        print(f"An error occurred: {e}")
-        sys.exit(1)
-    print("Old token file removed. A new one will be created during authentication.")
-
 # Set the locale to Japanese
 try:
     locale.setlocale(locale.LC_TIME, 'ja_JP.UTF-8')
@@ -62,7 +52,7 @@ try:
     fullscreen = config.getboolean('Display', 'fullscreen')
     slideshow_enabled = config.getboolean('Slideshow', 'enabled', fallback=False)
     transition_time = config.getint('Slideshow', 'transition_time', fallback=60)
-    photo_months_range = config.getint('Photos', 'months_range', fallback=12)
+    photos_directory = config.get('Photos', 'photos_directory', fallback='./photos')
 except (configparser.NoSectionError, configparser.NoOptionError):
     print("Error: Configuration missing or invalid in config.ini")
     pygame.quit()
@@ -194,15 +184,12 @@ def main():
     # Initialize PhotoManager and Slideshow if enabled
     photo_manager = None
     if slideshow_enabled:
-        photo_manager = PhotoManager(months_range=photo_months_range)
+        photo_manager = PhotoManager(photos_directory=photos_directory)
         slideshow = Slideshow(screen, photo_manager, transition_time)
     else:
         slideshow = None
 
     clock = pygame.time.Clock()
-
-    last_token_check = time.time()
-    TOKEN_CHECK_INTERVAL = 3600  # Check every hour
 
     last_photo_check = time.time()
     PHOTO_CHECK_INTERVAL = 300  # Check every 5 minutes
@@ -218,11 +205,6 @@ def main():
                 else:
                     logging.warning("No current photo")
                 last_photo_check = current_time
-
-            if slideshow_enabled and photo_manager and current_time - last_token_check > TOKEN_CHECK_INTERVAL:
-                logging.info("Performing periodic token check...")
-                photo_manager.get_credentials()  # This will refresh if necessary
-                last_token_check = current_time
 
             for event in pygame.event.get():
                 if event.type == pygame.QUIT:
