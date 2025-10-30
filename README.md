@@ -1,5 +1,4 @@
 ![Screenshot 1](images/Screenshot1.png)
-![Screenshot 2](images/Screenshot2.png)
 
 # japanese_hiragana_watch
 
@@ -29,22 +28,12 @@ If configured, it creates a slideshow of your most recent favorite photos in Goo
 8. Reboot your Raspberry Pi:
 ```sudo reboot```
 
-9. If you want to make a slide show of your own photos, go to https://console.cloud.google.com/ and get the `credentials.json` file:
+9. Adjust `config.ini` by setting the right options for Raspberry Pi (and slide show if you want). For the slideshow, make sure to copy your photos in the directory you configure in `config.ini`
 
-    1. Go to the Google Cloud Console (https://console.cloud.google.com/)
-    2. Create a new project or select an existing one
-    3. Enable the Google Photos Library API for your project
-    4. Go to the "Credentials" section
-    5. Create a new OAuth 2.0 Client ID (choose "Desktop app" as the application type)
-    6. Download the client configuration file, which will be your credentials.json
-    7. Put the credentials.json file in the same directory as the rest of the clock's files
-
-10. Adjust `config.ini` by setting the right options for Raspberry Pi (and slide show if you want)
-
-11. Run the script:
+10. Run the script:
 ```./japanese_hiragana_watch.py```
 
-12. If you decided to enable the slideshow, log into your google account when asked for it.
+11. If you decided to enable the slideshow, log into your google account when asked for it.
 
 *NOTE*: If you are curious, this application generates a log file named `watch.log` in the same directory is launched.
 

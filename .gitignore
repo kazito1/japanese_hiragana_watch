@@ -168,5 +168,8 @@ token.json
 # Photo Cache directory
 photo_cache/
 
+# Local photos directory (contains user's personal photos)
+photos/
+
 # Log
 watch.log
