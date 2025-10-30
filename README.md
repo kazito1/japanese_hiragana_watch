@@ -33,8 +33,6 @@ If configured, it creates a slideshow of your most recent favorite photos in Goo
 10. Run the script:
 ```./japanese_hiragana_watch.py```
 
-11. If you decided to enable the slideshow, log into your google account when asked for it.
-
 *NOTE*: If you are curious, this application generates a log file named `watch.log` in the same directory is launched.
 
 To exit use the `Esc` key or `Ctrl+C`
