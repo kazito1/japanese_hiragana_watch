@@ -3,7 +3,7 @@
 # japanese_hiragana_watch
 
 I have created this small application to put it in a Raspberry Pi and help my Japanese learning curve. It shows the date and the time in hiragana.
-If configured, it creates a slideshow of your most recent favorite photos in Google Photos.
+If configured, it creates a slideshow of the photos you drop on a specific directory.
 
 # To make it work on a Raspberry Pi
 
@@ -22,8 +22,8 @@ If configured, it creates a slideshow of your most recent favorite photos in Goo
 6. Update the locale settings:
 ```sudo update-locale```
 
-7. Install pygame, google authentication stuff and Japanese truetype font
-```sudo apt-get install python3-pygame python3-google-auth-httplib2 python3-google-auth-oauthlib fonts-horai-umefont ```
+7. Install pygame and Japanese truetype font
+```sudo apt-get install python3-pygame fonts-horai-umefont ```
 
 8. Reboot your Raspberry Pi:
 ```sudo reboot```
