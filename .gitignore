@@ -173,3 +173,7 @@ photos/
 
 # Log
 watch.log
+icloud_sync.log
+
+# Test scripts
+test_icloud_auth.py

@@ -37,9 +37,18 @@ If configured, it creates a slideshow of the photos you drop on a specific direc
 
 To exit use the `Esc` key or `Ctrl+C`
 
-# iCloud Photo Sync (Optional)
+# iCloud Photo Sync (Experimental - Limited Compatibility)
 
-If you want to automatically sync photos from your iCloud Photos library to your watch, you can use the companion `icloud_photo_sync.py` script. This script runs on Linux (Fedora or Raspberry Pi OS) and downloads photos directly from iCloud.
+**⚠️ Note:** This feature is experimental and has known compatibility issues with certain Apple account configurations, particularly Apple IDs using third-party email addresses (Gmail, Hotmail, etc.). Manual photo export is recommended for most users.
+
+If you want to automatically sync photos from your iCloud Photos library to your watch, you can use the companion `experimental/icloud_photo_sync.py` script. This script runs on Linux (Fedora or Raspberry Pi OS) and downloads photos directly from iCloud.
+
+## Known Limitations
+
+- May not work with Apple IDs using non-Apple email addresses (Hotmail, Gmail, etc.)
+- Requires 2FA to be enabled
+- Authentication may fail depending on account security settings
+- If you encounter authentication issues, manual photo export is recommended
 
 ## Prerequisites
 
@@ -69,27 +78,27 @@ If you want to automatically sync photos from your iCloud Photos library to your
 
 ### Download All Photos (limited to 50 by default)
 ```bash
-python3 icloud_photo_sync.py
+python3 experimental/icloud_photo_sync.py
 ```
 
 ### Download Only Favorite Photos
 ```bash
-python3 icloud_photo_sync.py --favorites-only
+python3 experimental/icloud_photo_sync.py --favorites-only
 ```
 
 ### Download from a Specific Album
 ```bash
-python3 icloud_photo_sync.py --album "Vacation 2024"
+python3 experimental/icloud_photo_sync.py --album "Vacation 2024"
 ```
 
 ### Download More Photos
 ```bash
-python3 icloud_photo_sync.py --max-photos 100
+python3 experimental/icloud_photo_sync.py --max-photos 100
 ```
 
 ### Combine Options
 ```bash
-python3 icloud_photo_sync.py --favorites-only --max-photos 200
+python3 experimental/icloud_photo_sync.py --favorites-only --max-photos 200
 ```
 
 ## First Run - Two-Factor Authentication
@@ -110,10 +119,10 @@ To automatically sync photos periodically, you can set up a cron job:
 crontab -e
 
 # Add this line to sync photos daily at 3 AM
-0 3 * * * cd /path/to/japanese_hiragana_watch && python3 icloud_photo_sync.py --favorites-only
+0 3 * * * cd /path/to/japanese_hiragana_watch && python3 experimental/icloud_photo_sync.py --favorites-only
 
 # Or sync every 6 hours
-0 */6 * * * cd /path/to/japanese_hiragana_watch && python3 icloud_photo_sync.py --favorites-only
+0 */6 * * * cd /path/to/japanese_hiragana_watch && python3 experimental/icloud_photo_sync.py --favorites-only
 ```
 
 ## Troubleshooting
