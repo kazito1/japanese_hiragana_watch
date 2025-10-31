@@ -36,3 +36,89 @@ If configured, it creates a slideshow of the photos you drop on a specific direc
 *NOTE*: If you are curious, this application generates a log file named `watch.log` in the same directory is launched.
 
 To exit use the `Esc` key or `Ctrl+C`
+
+# iCloud Photo Sync (Optional)
+
+If you want to automatically sync photos from your iCloud Photos library to your watch, you can use the companion `icloud_photo_sync.py` script. This script runs on Linux (Fedora or Raspberry Pi OS) and downloads photos directly from iCloud.
+
+## Prerequisites
+
+1. Install the `pyicloud` library:
+   ```bash
+   pip install pyicloud
+   ```
+
+2. Generate an **app-specific password** for iCloud:
+   - Go to https://appleid.apple.com/
+   - Sign in with your Apple ID
+   - Navigate to "Security" → "App-Specific Passwords"
+   - Generate a new password and save it
+
+## Configuration
+
+1. Edit `config.ini` and add your iCloud credentials in the `[iCloud]` section:
+   ```ini
+   [iCloud]
+   username = your_email@icloud.com
+   password = your_app_specific_password
+   ```
+
+   **IMPORTANT:** Use the app-specific password you generated, NOT your main iCloud password.
+
+## Usage
+
+### Download All Photos (limited to 50 by default)
+```bash
+python3 icloud_photo_sync.py
+```
+
+### Download Only Favorite Photos
+```bash
+python3 icloud_photo_sync.py --favorites-only
+```
+
+### Download from a Specific Album
+```bash
+python3 icloud_photo_sync.py --album "Vacation 2024"
+```
+
+### Download More Photos
+```bash
+python3 icloud_photo_sync.py --max-photos 100
+```
+
+### Combine Options
+```bash
+python3 icloud_photo_sync.py --favorites-only --max-photos 200
+```
+
+## First Run - Two-Factor Authentication
+
+The first time you run the script, you'll need to complete two-factor authentication:
+
+1. Run the script
+2. You'll receive a verification code on your trusted Apple devices
+3. Enter the code when prompted
+4. The authentication will be saved for future runs (typically valid for 2 months)
+
+## Automated Sync
+
+To automatically sync photos periodically, you can set up a cron job:
+
+```bash
+# Edit your crontab
+crontab -e
+
+# Add this line to sync photos daily at 3 AM
+0 3 * * * cd /path/to/japanese_hiragana_watch && python3 icloud_photo_sync.py --favorites-only
+
+# Or sync every 6 hours
+0 */6 * * * cd /path/to/japanese_hiragana_watch && python3 icloud_photo_sync.py --favorites-only
+```
+
+## Troubleshooting
+
+- **Authentication fails:** Make sure you're using an app-specific password, not your regular iCloud password
+- **No favorites found:** The script will list all available albums. Check the album names and use `--album` to specify the correct one
+- **Photos already exist:** The script skips photos that already exist in your photos directory
+- **Sync log:** Check `icloud_sync.log` for detailed information about sync operations
