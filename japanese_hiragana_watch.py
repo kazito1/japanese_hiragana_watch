@@ -50,6 +50,7 @@ try:
     screen_width = config.getint('Display', 'width')
     screen_height = config.getint('Display', 'height')
     fullscreen = config.getboolean('Display', 'fullscreen')
+    text_orientation = config.get('Display', 'text_orientation', fallback='horizontal')
     slideshow_enabled = config.getboolean('Slideshow', 'enabled', fallback=False)
     transition_time = config.getint('Slideshow', 'transition_time', fallback=60)
     photos_directory = config.get('Photos', 'photos_directory', fallback='./photos')
@@ -107,6 +108,91 @@ def render_text_with_border(font, text, text_color, border_color, border_width):
     bordered_surface.blit(text_surface, (border_width, border_width))
 
     return bordered_surface
+
+def render_vertical_text(screen, combined_text, font_path, screen_width, screen_height):
+    """
+    Render text vertically in traditional Japanese style (top-to-bottom, right-to-left).
+
+    Args:
+        screen: pygame screen surface
+        combined_text: the full text string to render
+        font_path: path to the font file
+        screen_width: width of the screen
+        screen_height: height of the screen
+    """
+    total_chars = len(combined_text)
+
+    # Calculate optimal number of characters per column and number of columns
+    # We want to roughly fill the screen aspect ratio
+    aspect_ratio = screen_width / screen_height
+    chars_per_column = int((total_chars / aspect_ratio) ** 0.5)
+    chars_per_column = max(chars_per_column, 10)  # Minimum 10 chars per column
+
+    # Calculate number of columns needed
+    num_columns = (total_chars + chars_per_column - 1) // chars_per_column
+
+    # Split text into columns
+    columns = []
+    for i in range(0, total_chars, chars_per_column):
+        columns.append(combined_text[i:i+chars_per_column])
+
+    # Calculate font size that fits all characters on screen
+    # Account for character height being roughly 1.2x font size
+    char_height_factor = 1.2
+    estimated_font_size = int(screen_height / (chars_per_column * char_height_factor))
+    # Also check width constraint (need space for all columns)
+    width_based_font = int(screen_width / (num_columns * 1.0))
+    font_size = min(estimated_font_size, width_based_font)
+    font_size = max(font_size, 10)  # Minimum font size
+
+    font = pygame.font.Font(font_path, font_size)
+
+    # Render all characters with black border
+    border_width = max(2, int(font_size * 0.05))  # Scale border with font size
+
+    # Calculate column width (use the widest character as reference)
+    # For simplicity, use a representative character
+    test_surface = render_text_with_border(font, "あ", WHITE, BLACK, border_width)
+    char_width = test_surface.get_width()
+    char_height = test_surface.get_height()
+
+    # Calculate total width of all columns
+    total_columns_width = num_columns * char_width
+    # Calculate horizontal spacing to distribute columns across screen
+    horizontal_padding = (screen_width - total_columns_width) / (num_columns + 1)
+
+    # Calculate vertical spacing between characters
+    total_column_height = chars_per_column * char_height
+    if total_column_height < screen_height:
+        vertical_spacing = (screen_height - total_column_height) / (chars_per_column + 1)
+    else:
+        vertical_spacing = 0
+        # Recalculate font size if it doesn't fit
+        font_size = int(screen_height / (chars_per_column * char_height_factor))
+        font = pygame.font.Font(font_path, font_size)
+        border_width = max(2, int(font_size * 0.05))
+        test_surface = render_text_with_border(font, "あ", WHITE, BLACK, border_width)
+        char_width = test_surface.get_width()
+        char_height = test_surface.get_height()
+        vertical_spacing = (screen_height - chars_per_column * char_height) / (chars_per_column + 1)
+        total_columns_width = num_columns * char_width
+        horizontal_padding = (screen_width - total_columns_width) / (num_columns + 1)
+
+    # Draw each column from right to left
+    for col_idx, column in enumerate(columns):
+        # Calculate x position for this column (right to left)
+        # Start from the right side
+        column_x = screen_width - (col_idx + 1) * char_width - (col_idx + 1) * horizontal_padding
+
+        # Draw each character in the column from top to bottom
+        current_y = vertical_spacing
+        for char in column:
+            if char:  # Skip empty characters
+                char_surface = render_text_with_border(font, char, WHITE, BLACK, border_width)
+                # Center the character horizontally within the column
+                char_x = column_x + (char_width - char_surface.get_width()) // 2
+                screen.blit(char_surface, (char_x, current_y))
+                current_y += char_height + vertical_spacing
 
 def get_japanese_number(number, category):
     if category == "minute":
@@ -277,45 +363,52 @@ def main():
 
             # Combine all text into one string
             combined_text = date_text + time_text
-            total_chars = len(combined_text)
 
-            # Calculate optimal number of lines and characters per line
-            # We want to roughly fill the screen aspect ratio
-            aspect_ratio = screen_width / screen_height
-            chars_per_line = int((total_chars * aspect_ratio) ** 0.5)
-            chars_per_line = max(chars_per_line, 10)  # Minimum 10 chars per line
+            # Render text based on orientation setting
+            if text_orientation == "vertical":
+                # Traditional Japanese vertical text (top-to-bottom, right-to-left)
+                render_vertical_text(screen, combined_text, font_path, screen_width, screen_height)
+            else:
+                # Horizontal text (left-to-right, top-to-bottom)
+                total_chars = len(combined_text)
 
-            # Split text into lines
-            lines = []
-            for i in range(0, total_chars, chars_per_line):
-                lines.append(combined_text[i:i+chars_per_line])
+                # Calculate optimal number of lines and characters per line
+                # We want to roughly fill the screen aspect ratio
+                aspect_ratio = screen_width / screen_height
+                chars_per_line = int((total_chars * aspect_ratio) ** 0.5)
+                chars_per_line = max(chars_per_line, 10)  # Minimum 10 chars per line
 
-            # Calculate font size that fits all lines on screen
-            # Account for line height being roughly 1.2x font size
-            line_height_factor = 1.2
-            estimated_font_size = int(screen_height / (len(lines) * line_height_factor))
-            # Also check width constraint
-            max_line_length = max(len(line) for line in lines)
-            width_based_font = int(screen_width / (max_line_length * 0.6))
-            font_size = min(estimated_font_size, width_based_font)
+                # Split text into lines
+                lines = []
+                for i in range(0, total_chars, chars_per_line):
+                    lines.append(combined_text[i:i+chars_per_line])
 
-            font = pygame.font.Font(font_path, font_size)
+                # Calculate font size that fits all lines on screen
+                # Account for line height being roughly 1.2x font size
+                line_height_factor = 1.2
+                estimated_font_size = int(screen_height / (len(lines) * line_height_factor))
+                # Also check width constraint
+                max_line_length = max(len(line) for line in lines)
+                width_based_font = int(screen_width / (max_line_length * 0.6))
+                font_size = min(estimated_font_size, width_based_font)
 
-            # Render all lines with black border
-            border_width = max(2, int(font_size * 0.05))  # Scale border with font size
-            line_surfaces = [render_text_with_border(font, line, WHITE, BLACK, border_width) for line in lines]
+                font = pygame.font.Font(font_path, font_size)
 
-            # Calculate total height of all lines
-            total_text_height = sum(surface.get_height() for surface in line_surfaces)
-            # Calculate vertical spacing to distribute lines across screen
-            vertical_padding = (screen_height - total_text_height) / (len(lines) + 1)
+                # Render all lines with black border
+                border_width = max(2, int(font_size * 0.05))  # Scale border with font size
+                line_surfaces = [render_text_with_border(font, line, WHITE, BLACK, border_width) for line in lines]
 
-            # Draw each line centered horizontally, distributed vertically
-            current_y = vertical_padding
-            for line_surface in line_surfaces:
-                line_x = (screen_width - line_surface.get_width()) // 2
-                screen.blit(line_surface, (line_x, current_y))
-                current_y += line_surface.get_height() + vertical_padding
+                # Calculate total height of all lines
+                total_text_height = sum(surface.get_height() for surface in line_surfaces)
+                # Calculate vertical spacing to distribute lines across screen
+                vertical_padding = (screen_height - total_text_height) / (len(lines) + 1)
+
+                # Draw each line centered horizontally, distributed vertically
+                current_y = vertical_padding
+                for line_surface in line_surfaces:
+                    line_x = (screen_width - line_surface.get_width()) // 2
+                    screen.blit(line_surface, (line_x, current_y))
+                    current_y += line_surface.get_height() + vertical_padding
 
             # Update the display
             pygame.display.flip()
