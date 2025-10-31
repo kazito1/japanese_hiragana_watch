@@ -28,7 +28,7 @@ If configured, it creates a slideshow of the photos you drop on a specific direc
 8. Reboot your Raspberry Pi:
 ```sudo reboot```
 
-9. Adjust `config.ini` by setting the right options for Raspberry Pi (and slide show if you want). For the slideshow, make sure to copy your photos in the directory you configure in `config.ini`
+9. Adjust `config.ini` by setting the right options for Raspberry Pi (and slide show if you want). For the slideshow, make sure to copy your photos in the directory you configure in `config.ini`. Please note that both horizontal and traditional vertical orientation of the text are supported.
 
 10. Run the script:
 ```./japanese_hiragana_watch.py```
